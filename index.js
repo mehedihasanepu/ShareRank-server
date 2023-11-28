@@ -32,6 +32,7 @@ async function run() {
         // await client.connect();
 
         const userCollection = client.db("shareRankDb").collection("users");
+        const postCollection = client.db("shareRankDb").collection("posts");
 
 
 
@@ -49,19 +50,20 @@ async function run() {
 
         //middleWare
         const verifyToken = (req, res, next) => {
-            console.log('Inside verify token:', req.headers.authorization);
+            // console.log('Inside verify token:', req.headers.authorization);
             if (!req.headers.authorization) {
                 return res.status(401).send({ message: 'unauthorized access' })
             }
             const token = req.headers.authorization.split(' ')[1];
             jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
                 if (err) {
-                    return res.status(401).send({ message: 'unauthorized access' })
+                    return res.status(401).send({ message: ' unauthorized access' })
                 }
                 req.decoded = decoded;
                 next()
             })
         }
+
 
 
         //use verifyAdmin after VerifyToken
@@ -87,6 +89,30 @@ async function run() {
         })
 
 
+        app.get('/user/currentUser', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await userCollection.find(query).toArray();
+            res.send(result);
+
+        });
+
+
+        app.get('/user/admin/:email', verifyToken, async (req, res) => {
+            const email = req.params.email;
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+            const query = { email: email }
+            const user = await userCollection.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === 'admin'
+            }
+            res.send({ admin })
+        })
+
 
         app.post('/users', async (req, res) => {
             const user = req.body;
@@ -98,6 +124,82 @@ async function run() {
             const result = await userCollection.insertOne(user);
             res.send(result);
         })
+
+
+
+
+
+        // post related apis 
+        app.get('/addPosts', async (req, res) => {
+            const result = await postCollection.find().toArray();
+            res.send(result)
+        })
+
+
+        app.get("/posts", async (req, res) => {
+            try {
+                const search = req.query.search;
+                const page = req.query.page ? parseInt(req.query.page) : 1;    
+                const limit = 5; 
+                const skip = (page - 1) * limit; 
+
+                const query = {};
+
+                if (search) {
+                    query.tag = { $regex: new RegExp(search, "i") };
+                }
+
+                let sortItem = { postTime: -1 };
+
+                if (req.query.vote === 'upVote') {
+                    sortItem = { voteDifference: -1 }; 
+                }
+
+                const result = await postCollection
+                    .aggregate([
+                        { $match: query }, 
+                        {
+                            $addFields: {
+                                voteDifference: { $subtract: ["$upVote", "$downVote"] }
+                            }
+                        },
+                        { $sort: sortItem }, 
+                        { $skip: skip }, 
+                        { $limit: limit } 
+                    ])
+                    .toArray();
+
+                res.send(result);
+            } catch (error) {
+                console.error("Error fetching allSort post:", error);
+                res.status(500).send({ error: "Internal Server Error" });
+            }
+        });
+
+
+
+
+        app.get('/addPost/user', async (req, res) => {
+            const email = req.query.email;
+            const query = { authorEmail: email };
+            const result = await postCollection.find(query).toArray();
+            res.send(result)
+        })
+
+
+        app.post('/addPost', verifyToken, async (req, res) => {
+            const item = req.body;
+            const result = await postCollection.insertOne(item);
+            res.send(result)
+        })
+
+
+
+
+
+
+
+
 
 
 
