@@ -35,6 +35,7 @@ async function run() {
         const userCollection = client.db("shareRankDb").collection("users");
         const postCollection = client.db("shareRankDb").collection("posts");
         const commentCollection = client.db("shareRankDb").collection("comments");
+        const FeedbackCollection = client.db("shareRankDb").collection("Feedbacks");
 
 
 
@@ -185,7 +186,7 @@ async function run() {
             const result = await postCollection.findOne(query);
             res.send(result)
         })
-        
+
 
 
         app.get('/addPost/user', async (req, res) => {
@@ -215,6 +216,15 @@ async function run() {
         })
 
 
+        app.delete('/post/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await postCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+
         app.post('/addPost', verifyToken, async (req, res) => {
             const item = req.body;
             const result = await postCollection.insertOne(item);
@@ -240,8 +250,12 @@ async function run() {
 
 
 
-
-
+        // feedback related api 
+        app.post('/feedback', verifyToken, async (req, res) => {
+            const item = req.body;
+            const result = await FeedbackCollection.insertOne(item);
+            res.send(result)
+        })
 
 
 
@@ -276,11 +290,6 @@ async function run() {
         })
 
 
-
-
-
-
-
         // Send a ping to confirm a successful connection
         // await client.db("admin").command({ ping: 1 });
         console.log("Pinged your deployment. You successfully connected to MongoDB!");
@@ -290,10 +299,6 @@ async function run() {
     }
 }
 run().catch(console.dir);
-
-
-
-
 
 
 
