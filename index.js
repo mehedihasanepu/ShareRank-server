@@ -35,7 +35,8 @@ async function run() {
         const userCollection = client.db("shareRankDb").collection("users");
         const postCollection = client.db("shareRankDb").collection("posts");
         const commentCollection = client.db("shareRankDb").collection("comments");
-        const FeedbackCollection = client.db("shareRankDb").collection("Feedbacks");
+        const feedbackCollection = client.db("shareRankDb").collection("feedbacks");
+        const announcementCollection = client.db("shareRankDb").collection("announcements");
 
 
 
@@ -87,8 +88,20 @@ async function run() {
         // user related API 
 
         app.get('/users', verifyToken, async (req, res) => {
-            const result = await userCollection.find().toArray();
-            res.send(result)
+            const search = req.query.search;
+
+            const query = {};
+            if (search) {
+                query.name = { $regex: new RegExp(search, "i") };
+            }
+
+            const result = await userCollection
+                .aggregate([
+                    { $match: query }
+                ])
+                .toArray();
+            res.send(result);
+
         })
 
 
@@ -114,6 +127,19 @@ async function run() {
                 admin = user?.role === 'admin'
             }
             res.send({ admin })
+        })
+
+
+        app.patch('/users/admin/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) }
+            const updateDoc = {
+                $set: {
+                    role: 'admin'
+                }
+            }
+            const result = await userCollection.updateOne(filter, updateDoc);
+            res.send(result)
         })
 
 
@@ -242,6 +268,16 @@ async function run() {
         })
 
 
+
+        app.delete('/comment/:id',verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await commentCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+
         app.post('/comment', verifyToken, async (req, res) => {
             const item = req.body;
             const result = await commentCollection.insertOne(item);
@@ -251,13 +287,41 @@ async function run() {
 
 
         // feedback related api 
-        app.post('/feedback', verifyToken, async (req, res) => {
-            const item = req.body;
-            const result = await FeedbackCollection.insertOne(item);
+
+        app.get('/feedback', verifyToken, async (req, res) => {
+            const result = await feedbackCollection.find().toArray();
             res.send(result)
         })
 
 
+        app.delete('/feedback/:id',verifyToken, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await feedbackCollection.deleteOne(query);
+            res.send(result);
+        })
+
+
+
+        app.post('/feedback', verifyToken, async (req, res) => {
+            const item = req.body;
+            const result = await feedbackCollection.insertOne(item);
+            res.send(result)
+        })
+
+
+
+        // announcement related api 
+
+        app.post('/announcement', verifyToken, async (req, res) => {
+            const item = req.body;
+            const result = await announcementCollection.insertOne(item);
+            res.send(result)
+        })
+
+
+
+        
 
         // payment intent
 
