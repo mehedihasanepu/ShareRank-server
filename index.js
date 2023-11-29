@@ -34,6 +34,7 @@ async function run() {
 
         const userCollection = client.db("shareRankDb").collection("users");
         const postCollection = client.db("shareRankDb").collection("posts");
+        const commentCollection = client.db("shareRankDb").collection("comments");
 
 
 
@@ -140,9 +141,9 @@ async function run() {
         app.get("/posts", async (req, res) => {
             try {
                 const search = req.query.search;
-                const page = req.query.page ? parseInt(req.query.page) : 1;    
-                const limit = 5; 
-                const skip = (page - 1) * limit; 
+                const page = req.query.page ? parseInt(req.query.page) : 1;
+                const limit = 5;
+                const skip = (page - 1) * limit;
 
                 const query = {};
 
@@ -153,20 +154,20 @@ async function run() {
                 let sortItem = { postTime: -1 };
 
                 if (req.query.vote === 'upVote') {
-                    sortItem = { voteDifference: -1 }; 
+                    sortItem = { voteDifference: -1 };
                 }
 
                 const result = await postCollection
                     .aggregate([
-                        { $match: query }, 
+                        { $match: query },
                         {
                             $addFields: {
                                 voteDifference: { $subtract: ["$upVote", "$downVote"] }
                             }
                         },
-                        { $sort: sortItem }, 
-                        { $skip: skip }, 
-                        { $limit: limit } 
+                        { $sort: sortItem },
+                        { $skip: skip },
+                        { $limit: limit }
                     ])
                     .toArray();
 
@@ -178,12 +179,38 @@ async function run() {
         });
 
 
+        app.get('/post/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) };
+            const result = await postCollection.findOne(query);
+            res.send(result)
+        })
+        
 
 
         app.get('/addPost/user', async (req, res) => {
             const email = req.query.email;
             const query = { authorEmail: email };
-            const result = await postCollection.find(query).toArray();
+            let sortItem = { postTime: -1 };
+            const result = await postCollection.find(query).sort(sortItem).toArray();
+            res.send(result)
+        })
+
+
+
+        app.patch('/post/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const options = { upsert: true };
+            const updateVote = req.body;
+            const product = {
+                $set: {
+                    upVote: updateVote.newUpVote,
+                    downVote: updateVote.newDownVote,
+
+                }
+            }
+            const result = await postCollection.updateOne(filter, product, options)
             res.send(result)
         })
 
@@ -193,6 +220,27 @@ async function run() {
             const result = await postCollection.insertOne(item);
             res.send(result)
         })
+
+
+
+
+        // comment related api 
+
+        app.get('/comment', verifyToken, async (req, res) => {
+            const result = await commentCollection.find().toArray();
+            res.send(result)
+        })
+
+
+        app.post('/comment', verifyToken, async (req, res) => {
+            const item = req.body;
+            const result = await commentCollection.insertOne(item);
+            res.send(result)
+        })
+
+
+
+
 
 
 
