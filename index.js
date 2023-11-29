@@ -159,10 +159,16 @@ async function run() {
 
 
         // post related apis 
-        app.get('/addPosts', async (req, res) => {
-            const result = await postCollection.find().toArray();
-            res.send(result)
-        })
+        app.get('/allPosts', async (req, res) => {
+            try {
+                const result = await postCollection.find().toArray();
+                console.log(result); 
+                res.send(result);
+            } catch (error) {
+                console.error("Error fetching posts:", error);
+                res.status(500).send("Error fetching posts");
+            }
+        });
 
 
         app.get("/posts", async (req, res) => {
@@ -312,6 +318,14 @@ async function run() {
 
 
         // announcement related api 
+
+
+
+        app.get('/announcement',  async (req, res) => {
+            const result = await announcementCollection.find().toArray();
+            res.send(result)
+        })
+
 
         app.post('/announcement', verifyToken, async (req, res) => {
             const item = req.body;
