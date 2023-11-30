@@ -37,6 +37,7 @@ async function run() {
         const commentCollection = client.db("shareRankDb").collection("comments");
         const feedbackCollection = client.db("shareRankDb").collection("feedbacks");
         const announcementCollection = client.db("shareRankDb").collection("announcements");
+        const tagCollection = client.db("shareRankDb").collection("tags");
 
 
 
@@ -335,7 +336,22 @@ async function run() {
 
 
 
-        
+        // tag related Api 
+        app.get('/tag', async (req, res) => {
+            const result = await tagCollection.find().toArray();
+            res.send(result)
+        })
+
+
+        app.post('/tag', verifyToken, async (req, res) => {
+            const item = req.body;
+            const result = await tagCollection.insertOne(item);
+            res.send(result)
+        })
+
+
+
+
 
         // payment intent
 
