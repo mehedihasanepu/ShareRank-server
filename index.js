@@ -163,7 +163,7 @@ async function run() {
         app.get('/allPosts', async (req, res) => {
             try {
                 const result = await postCollection.find().toArray();
-                console.log(result); 
+                // console.log(result); 
                 res.send(result);
             } catch (error) {
                 console.error("Error fetching posts:", error);
