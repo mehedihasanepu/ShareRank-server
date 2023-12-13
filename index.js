@@ -176,7 +176,7 @@ async function run() {
             try {
                 const search = req.query.search;
                 const page = req.query.page ? parseInt(req.query.page) : 1;
-                const limit = 5;
+                const limit = 6;
                 const skip = (page - 1) * limit;
 
                 const query = {};
@@ -269,14 +269,14 @@ async function run() {
 
         // comment related api 
 
-        app.get('/comment', verifyToken, async (req, res) => {
+        app.get('/comment', async (req, res) => {
             const result = await commentCollection.find().toArray();
             res.send(result)
         })
 
 
 
-        app.delete('/comment/:id',verifyToken, async (req, res) => {
+        app.delete('/comment/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await commentCollection.deleteOne(query);
@@ -301,7 +301,7 @@ async function run() {
         })
 
 
-        app.delete('/feedback/:id',verifyToken, async (req, res) => {
+        app.delete('/feedback/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) }
             const result = await feedbackCollection.deleteOne(query);
@@ -322,7 +322,7 @@ async function run() {
 
 
 
-        app.get('/announcement',  async (req, res) => {
+        app.get('/announcement', async (req, res) => {
             const result = await announcementCollection.find().toArray();
             res.send(result)
         })
